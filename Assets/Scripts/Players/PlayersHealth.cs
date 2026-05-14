@@ -42,43 +42,57 @@ public class PlayerHealth : NetworkBehaviour
         if (IsServer)
             currentHealth.Value = maxHealth;
 
-   
+        currentHealth.OnValueChanged += OnHealthChanged;
+
         if (IsOwner)
         {
-            vidaText = GameObject.FindGameObjectWithTag("Vida")
-                .GetComponent<TextMeshProUGUI>();
-            if (currentHealth.Value > 0)
-            {
-                vidaText.text = currentHealth.Value.ToString();
-            }
+            Invoke(nameof(SetupUI), 0.2f);
         }
-
-        currentHealth.OnValueChanged += OnHealthChanged;
     }
-    void OnEnable()
+
+    void SetupUI()
     {
-        currentHealth.OnValueChanged += OnHealthChanged;
-    }
+   
 
-    void OnDisable()
-    {
-        currentHealth.OnValueChanged -= OnHealthChanged;
-    }
+        GameObject vidaObj = GameObject.FindGameObjectWithTag("Vida");
 
+        if (vidaObj != null)
+        {
+   
+
+            vidaText = vidaObj.GetComponent<TextMeshProUGUI>();
+
+            UpdateHealthText(currentHealth.Value);
+        }
+        
+    }
     void OnHealthChanged(float oldValue, float newValue)
     {
-      
-        if (IsOwner && vidaText != null)
+        if (IsOwner)
         {
-            vidaText.text = newValue.ToString();
+            UpdateHealthText(newValue);
         }
 
-      
         if (newValue <= 0 && oldValue > 0)
         {
             DieVisual();
         }
     }
+
+    void UpdateHealthText(float hp)
+    {
+        if (vidaText != null)
+        {
+            vidaText.text = Mathf.CeilToInt(hp) + " HP";
+        }
+    }
+    public override void OnNetworkDespawn()
+    {
+        currentHealth.OnValueChanged -= OnHealthChanged;
+    }
+
+
+
     public void TakeDamage(float dmg, Vector3 hitDir)
     {
         if (!IsServer) return;
